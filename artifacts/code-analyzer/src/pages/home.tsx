@@ -87,11 +87,11 @@ End of Report
   const getLevelConfig = (level: string) => {
     switch (level) {
       case "Low":
-        return { icon: ShieldCheck, color: "text-emerald-500", bg: "bg-emerald-50", progressColor: "bg-emerald-500", label: "Low Risk" };
+        return { icon: ShieldCheck, color: "text-emerald-600", bg: "bg-emerald-50", progressColor: "bg-emerald-500", label: "Low Plagiarism" };
       case "Medium":
-        return { icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-50", progressColor: "bg-amber-500", label: "Moderate Risk" };
+        return { icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50", progressColor: "bg-amber-500", label: "Medium Plagiarism" };
       case "High":
-        return { icon: ShieldAlert, color: "text-rose-500", bg: "bg-rose-50", progressColor: "bg-rose-500", label: "High Risk" };
+        return { icon: ShieldAlert, color: "text-rose-600", bg: "bg-rose-50", progressColor: "bg-rose-500", label: "High Plagiarism" };
       default:
         return { icon: ShieldCheck, color: "text-primary", bg: "bg-primary/10", progressColor: "bg-primary", label: "Unknown" };
     }
@@ -220,6 +220,9 @@ End of Report
                       className="h-3 bg-secondary" 
                       indicatorColor={getLevelConfig(result.plagiarismLevel).progressColor}
                     />
+                    <p className="mt-3 text-xs text-muted-foreground italic">
+                      Similarity is calculated using AST-based structural comparison.
+                    </p>
                   </div>
 
                   {/* Risk Level Card */}

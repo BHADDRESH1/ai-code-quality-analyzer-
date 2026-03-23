@@ -142,9 +142,8 @@ def analyze_quality(source, filename):
     # Check for short variable names
     short_vars = check_short_variable_names(tree, source.splitlines())
     if short_vars:
-        var_list = ", ".join(sorted(short_vars))
         suggestions.append(
-            f"Use descriptive variable names instead of short ones like: {var_list}"
+            "Use meaningful variable names instead of a, b, x, y"
         )
 
     # Check for lack of functions (modularity)
