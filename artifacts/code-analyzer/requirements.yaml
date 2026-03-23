@@ -1,0 +1,13 @@
+packages:
+  "framer-motion": "For elegant page transitions and smooth progress bar animations fitting a professional tool"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility for merging tailwind classes without style conflicts"
+
+images:
+  - path: "artifacts/code-analyzer/public/images/academic-bg.png"
+    description: "Subtle, minimalist abstract geometric background pattern in very light gray and white with soft pale blue accents, suitable for a professional academic technology tool"
+    aspect_ratio: "16:9"
+
+notes:
+  - Expecting /api/analyze to accept multipart/form-data with 'file1' and 'file2' as Blob/File objects.
+  - The UI restricts file selection to .py extensions on the client side.

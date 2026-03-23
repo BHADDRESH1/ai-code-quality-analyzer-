@@ -5,18 +5,26 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  AnalysisResult,
+  AnalyzeCodeBody,
+  ErrorResponse,
+  HealthStatus,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +107,93 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Upload two Python files and receive similarity score, plagiarism level, and code quality suggestions
+ * @summary Analyze two Python files for plagiarism and quality
+ */
+export const getAnalyzeCodeUrl = () => {
+  return `/api/analyze`;
+};
+
+export const analyzeCode = async (
+  analyzeCodeBody: AnalyzeCodeBody,
+  options?: RequestInit,
+): Promise<AnalysisResult> => {
+  const formData = new FormData();
+  formData.append(`file1`, analyzeCodeBody.file1);
+  formData.append(`file2`, analyzeCodeBody.file2);
+
+  return customFetch<AnalysisResult>(getAnalyzeCodeUrl(), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const getAnalyzeCodeMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeCode>>,
+    TError,
+    { data: BodyType<AnalyzeCodeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof analyzeCode>>,
+  TError,
+  { data: BodyType<AnalyzeCodeBody> },
+  TContext
+> => {
+  const mutationKey = ["analyzeCode"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof analyzeCode>>,
+    { data: BodyType<AnalyzeCodeBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return analyzeCode(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AnalyzeCodeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof analyzeCode>>
+>;
+export type AnalyzeCodeMutationBody = BodyType<AnalyzeCodeBody>;
+export type AnalyzeCodeMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Analyze two Python files for plagiarism and quality
+ */
+export const useAnalyzeCode = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeCode>>,
+    TError,
+    { data: BodyType<AnalyzeCodeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof analyzeCode>>,
+  TError,
+  { data: BodyType<AnalyzeCodeBody> },
+  TContext
+> => {
+  return useMutation(getAnalyzeCodeMutationOptions(options));
+};

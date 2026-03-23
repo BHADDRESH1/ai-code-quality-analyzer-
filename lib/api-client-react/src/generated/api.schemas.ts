@@ -8,3 +8,41 @@
 export interface HealthStatus {
   status: string;
 }
+
+/**
+ * Plagiarism level
+ */
+export type AnalysisResultPlagiarismLevel =
+  (typeof AnalysisResultPlagiarismLevel)[keyof typeof AnalysisResultPlagiarismLevel];
+
+export const AnalysisResultPlagiarismLevel = {
+  Low: "Low",
+  Medium: "Medium",
+  High: "High",
+} as const;
+
+export interface AnalysisResult {
+  /** Similarity percentage 0-100 */
+  similarity: number;
+  /** Plagiarism level */
+  plagiarismLevel: AnalysisResultPlagiarismLevel;
+  /** Code quality suggestions for file 1 */
+  suggestionsFile1: string[];
+  /** Code quality suggestions for file 2 */
+  suggestionsFile2: string[];
+  /** Name of the first file */
+  file1Name: string;
+  /** Name of the second file */
+  file2Name: string;
+}
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export type AnalyzeCodeBody = {
+  /** First Python file */
+  file1: Blob;
+  /** Second Python file */
+  file2: Blob;
+};

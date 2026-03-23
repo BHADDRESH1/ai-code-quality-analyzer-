@@ -14,3 +14,27 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Upload two Python files and receive similarity score, plagiarism level, and code quality suggestions
+ * @summary Analyze two Python files for plagiarism and quality
+ */
+export const AnalyzeCodeBody = zod.object({
+  file1: zod.instanceof(File).describe("First Python file"),
+  file2: zod.instanceof(File).describe("Second Python file"),
+});
+
+export const AnalyzeCodeResponse = zod.object({
+  similarity: zod.number().describe("Similarity percentage 0-100"),
+  plagiarismLevel: zod
+    .enum(["Low", "Medium", "High"])
+    .describe("Plagiarism level"),
+  suggestionsFile1: zod
+    .array(zod.string())
+    .describe("Code quality suggestions for file 1"),
+  suggestionsFile2: zod
+    .array(zod.string())
+    .describe("Code quality suggestions for file 2"),
+  file1Name: zod.string().describe("Name of the first file"),
+  file2Name: zod.string().describe("Name of the second file"),
+});

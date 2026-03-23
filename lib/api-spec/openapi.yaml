@@ -1,6 +1,5 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
   description: API specification
@@ -10,6 +9,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: analyze
+    description: Code analysis operations
 paths:
   /healthz:
     get:
@@ -24,6 +25,49 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /analyze:
+    post:
+      operationId: analyzeCode
+      tags: [analyze]
+      summary: Analyze two Python files for plagiarism and quality
+      description: Upload two Python files and receive similarity score, plagiarism level, and code quality suggestions
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file1:
+                  type: string
+                  format: binary
+                  description: First Python file
+                file2:
+                  type: string
+                  format: binary
+                  description: Second Python file
+              required:
+                - file1
+                - file2
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +77,43 @@ components:
           type: string
       required:
         - status
-
+    AnalysisResult:
+      type: object
+      properties:
+        similarity:
+          type: number
+          description: Similarity percentage 0-100
+        plagiarismLevel:
+          type: string
+          enum: [Low, Medium, High]
+          description: Plagiarism level
+        suggestionsFile1:
+          type: array
+          items:
+            type: string
+          description: Code quality suggestions for file 1
+        suggestionsFile2:
+          type: array
+          items:
+            type: string
+          description: Code quality suggestions for file 2
+        file1Name:
+          type: string
+          description: Name of the first file
+        file2Name:
+          type: string
+          description: Name of the second file
+      required:
+        - similarity
+        - plagiarismLevel
+        - suggestionsFile1
+        - suggestionsFile2
+        - file1Name
+        - file2Name
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

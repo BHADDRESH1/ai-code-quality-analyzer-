@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "AI Code Plagiarism & Quality Analyzer"
+version = "1.0.0"
+id = "artifacts/code-analyzer"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23052
+
+[services.development]
+run = "pnpm --filter @workspace/code-analyzer run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/code-analyzer", "run", "build" ]
+publicDir = "artifacts/code-analyzer/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23052"
+BASE_PATH = "/"

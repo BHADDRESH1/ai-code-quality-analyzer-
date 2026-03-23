@@ -1,5 +1,23 @@
 # Workspace
 
+## AI Code Plagiarism & Quality Analyzer
+
+A full-stack web application that analyzes Python files for plagiarism and code quality.
+
+### How it works
+- Users upload two `.py` files via the frontend
+- The Express API receives the files via multipart/form-data
+- Node.js spawns a Python3 process running `artifacts/api-server/src/analyze.py`
+- Python uses AST comparison (LCS on normalized node sequences) to detect plagiarism
+- Results include: similarity %, plagiarism level (Low/Medium/High), quality suggestions per file
+
+### Architecture
+- **Frontend**: React + Vite at `artifacts/code-analyzer/` (preview path `/`)
+- **Backend**: Express API at `artifacts/api-server/` (path `/api`)
+- **Analysis Engine**: Python 3.11 script at `artifacts/api-server/src/analyze.py`
+
+
+
 ## Overview
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
