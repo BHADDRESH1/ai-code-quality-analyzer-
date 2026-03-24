@@ -8,9 +8,86 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      iframe[src*="replit"],
+      div[class*="replit"],
+      div[id*="replit"],
+      [data-replit-badge],
+      #replit-badge {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function () {
+        function hideElement(el) {
+          if (el && el.style) {
+            el.style.setProperty("display", "none", "important");
+            el.style.setProperty("visibility", "hidden", "important");
+            el.style.setProperty("opacity", "0", "important");
+          }
+        }
+
+        function checkElement(el) {
+          if (!el || el.nodeType !== 1) return;
+          var cls = (typeof el.className === "string" ? el.className : "").toLowerCase();
+          var id = (el.id || "").toLowerCase();
+          var src = (el.getAttribute ? el.getAttribute("src") || "" : "").toLowerCase();
+          if (cls.includes("replit") || id.includes("replit") || src.includes("replit")) {
+            hideElement(el);
+          }
+        }
+
+        function scanTextNodes(root) {
+          var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+          var node;
+          while ((node = walker.nextNode())) {
+            if ((node.nodeValue || "").toLowerCase().includes("made with replit")) {
+              var parent = node.parentElement;
+              for (var i = 0; i < 6 && parent && parent !== document.body; i++) {
+                parent = parent.parentElement;
+              }
+              if (parent && parent !== document.body) {
+                hideElement(parent);
+              } else if (node.parentElement && node.parentElement !== document.body) {
+                hideElement(node.parentElement);
+              }
+            }
+          }
+        }
+
+        function scanElements(root) {
+          checkElement(root);
+          var all = root.querySelectorAll ? root.querySelectorAll("*") : [];
+          for (var i = 0; i < all.length; i++) {
+            checkElement(all[i]);
+          }
+          scanTextNodes(root);
+        }
+
+        var observer = new MutationObserver(function (mutations) {
+          for (var i = 0; i < mutations.length; i++) {
+            var added = mutations[i].addedNodes;
+            for (var j = 0; j < added.length; j++) {
+              var node = added[j];
+              if (node.nodeType === 1) {
+                scanElements(node);
+              }
+            }
+          }
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+          observer.observe(document.body, { childList: true, subtree: true });
+          scanElements(document.body);
+        });
+      })();
+    </script>
   </body>
 </html>
