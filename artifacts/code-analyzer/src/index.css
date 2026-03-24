@@ -50,14 +50,13 @@
 }
 
 :root {
-  /* Clean, Professional Academic Palette */
-  --background: 210 40% 98%; /* Light slate background */
-  --foreground: 222 47% 11%; /* Dark Navy text */
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
   --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
-  --primary: 215 25% 27%; /* Oxford Blue / Academic Blue */
+  --primary: 215 25% 27%;
   --primary-foreground: 210 40% 98%;
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
@@ -70,7 +69,6 @@
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
   --ring: 215 25% 27%;
-  
   --radius: 0.75rem;
 }
 
@@ -101,12 +99,55 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    background-image: linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px),
-                      linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px);
-    background-size: 40px 40px;
+    @apply text-foreground font-sans antialiased;
+    background: linear-gradient(135deg, #e8f0fe 0%, #f3e8ff 40%, #ffffff 70%, #dbeafe 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif tracking-tight text-primary;
   }
+}
+
+/* Floating orb animations */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  33%       { transform: translateY(-30px) translateX(15px); }
+  66%       { transform: translateY(-15px) translateX(-10px); }
+}
+
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  50%       { transform: translateY(-20px) translateX(-20px); }
+}
+
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  50%       { transform: translateY(18px) translateX(12px); }
+}
+
+.orb-1 { animation: float-slow 12s ease-in-out infinite; }
+.orb-2 { animation: float-medium 9s ease-in-out infinite; }
+.orb-3 { animation: float-fast 7s ease-in-out infinite; }
+.orb-4 { animation: float-slow 15s ease-in-out infinite reverse; }
+
+/* Glassmorphism card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 8px 32px rgba(99, 120, 180, 0.10),
+    0 2px 8px rgba(99, 120, 180, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.80);
+}
+
+.glass-card-colored {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow:
+    0 8px 32px rgba(99, 120, 180, 0.10),
+    0 2px 8px rgba(99, 120, 180, 0.06);
 }

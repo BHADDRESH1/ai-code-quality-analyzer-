@@ -99,15 +99,12 @@ End of Report
 
   return (
     <div className="min-h-screen w-full relative pb-24">
-      {/* Background decoration */}
+      {/* Background floating orbs */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <img 
-          src={`${import.meta.env.BASE_URL}images/academic-bg.png`}
-          alt="" 
-          className="w-full h-full object-cover opacity-50 mix-blend-multiply"
-        />
-        <div className="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-white to-transparent" />
-        <div className="absolute bottom-0 inset-x-0 h-64 bg-gradient-to-t from-background to-transparent" />
+        <div className="orb-1 absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-blue-200/40 blur-3xl" />
+        <div className="orb-2 absolute top-1/4 -right-40 w-[420px] h-[420px] rounded-full bg-purple-200/35 blur-3xl" />
+        <div className="orb-3 absolute bottom-0 left-1/3 w-[380px] h-[380px] rounded-full bg-indigo-100/40 blur-3xl" />
+        <div className="orb-4 absolute -bottom-20 -right-20 w-[300px] h-[300px] rounded-full bg-violet-200/30 blur-3xl" />
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 relative z-10">
@@ -133,7 +130,7 @@ End of Report
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-3xl shadow-xl shadow-primary/5 border border-border/50 p-6 md:p-10 max-w-3xl mx-auto"
+                className="glass-card rounded-3xl p-6 md:p-10 max-w-3xl mx-auto"
               >
                 <div className="grid md:grid-cols-2 gap-8 mb-10">
                   <FileUpload 
@@ -208,7 +205,7 @@ End of Report
                 {/* Top Stats Row */}
                 <div className="grid md:grid-cols-3 gap-6">
                   {/* Score Card */}
-                  <div className="md:col-span-2 bg-white rounded-3xl shadow-xl shadow-primary/5 border border-border/50 p-8 flex flex-col justify-center">
+                  <div className="md:col-span-2 glass-card rounded-3xl p-8 flex flex-col justify-center">
                     <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-6">Structural Similarity</h3>
                     <div className="flex items-end gap-4 mb-4">
                       <span className="text-6xl font-serif font-bold text-primary leading-none">
@@ -226,7 +223,7 @@ End of Report
                   </div>
 
                   {/* Risk Level Card */}
-                  <div className={`rounded-3xl border p-8 flex flex-col items-center justify-center text-center transition-colors ${getLevelConfig(result.plagiarismLevel).bg} border-${getLevelConfig(result.plagiarismLevel).color.split('-')[1]}-200`}>
+                  <div className={`glass-card-colored rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-colors ${getLevelConfig(result.plagiarismLevel).bg}`}>
                     <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4 opacity-80">Assessment</h3>
                     {React.createElement(getLevelConfig(result.plagiarismLevel).icon, { 
                       className: `w-16 h-16 mb-4 ${getLevelConfig(result.plagiarismLevel).color}` 
@@ -238,7 +235,7 @@ End of Report
                 </div>
 
                 {/* Code Quality Section */}
-                <div className="bg-white rounded-3xl shadow-xl shadow-primary/5 border border-border/50 overflow-hidden">
+                <div className="glass-card rounded-3xl overflow-hidden">
                   <div className="p-6 border-b border-border bg-secondary/30">
                     <h3 className="text-lg font-serif font-bold text-primary flex items-center gap-2">
                       <FileText className="w-5 h-5" />
