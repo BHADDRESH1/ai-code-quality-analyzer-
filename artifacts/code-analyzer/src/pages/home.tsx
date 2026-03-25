@@ -62,9 +62,11 @@ export default function Home() {
   const handleAnalyze = () => {
     if (!file1 || !file2) return;
     if (preValidationError) {
+      reset();
       setLocalError(preValidationError);
       return;
     }
+    reset();
     setLocalError(null);
     analyze({ file1, file2 });
   };
@@ -182,18 +184,18 @@ End of Report
                   <FileUpload 
                     label="Submission 1" 
                     file={file1} 
-                    onFileSelect={(f) => { setLocalError(null); setFile1(f); }} 
+                    onFileSelect={(f) => { setLocalError(null); reset(); setFile1(f); }} 
                     supportedExtensions={supportedExtensions}
                     accept={supportedExtensions.join(",")}
-                    onInvalidFile={(msg) => setLocalError(msg)}
+                    onInvalidFile={(msg) => { reset(); setLocalError(msg); }}
                   />
                   <FileUpload 
                     label="Submission 2" 
                     file={file2} 
-                    onFileSelect={(f) => { setLocalError(null); setFile2(f); }} 
+                    onFileSelect={(f) => { setLocalError(null); reset(); setFile2(f); }} 
                     supportedExtensions={supportedExtensions}
                     accept={supportedExtensions.join(",")}
-                    onInvalidFile={(msg) => setLocalError(msg)}
+                    onInvalidFile={(msg) => { reset(); setLocalError(msg); }}
                   />
                 </div>
 
