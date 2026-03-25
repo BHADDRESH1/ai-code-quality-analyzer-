@@ -15,10 +15,12 @@ export function useAnalyzeCode() {
       });
 
       if (!res.ok) {
-        let errorMsg = "Failed to analyze code.";
+        let errorMsg = `Failed to analyze code (${res.status})`;
         try {
           const errorData = await res.json();
-          if (errorData.error) errorMsg = errorData.error;
+          if (errorData && typeof errorData.error === "string") {
+            errorMsg = errorData.error;
+          }
         } catch {
           // ignore parse error, use default message
         }

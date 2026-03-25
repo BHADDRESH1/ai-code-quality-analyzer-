@@ -46,6 +46,14 @@ export function FileUpload({
       else alert(msg);
       return;
     }
+
+    if (selectedFile.size === 0) {
+      const msg = "File is empty. Please upload a non-empty file.";
+      if (onInvalidFile) onInvalidFile(msg);
+      else alert(msg);
+      return;
+    }
+
     onFileSelect(selectedFile);
   };
 

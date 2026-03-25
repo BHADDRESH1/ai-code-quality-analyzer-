@@ -75,35 +75,31 @@ router.post(
     // Path to the Python analysis script
     const scriptPath = path.resolve(__dirname, "analyze.py");
 
-    // Spawn Python process
-    const python = spawn("python3", [scriptPath]);
+    const pythonCandidates = process.platform === "win32"
+      ? ["python", "py", "python3"]
+      : ["python3", "python"];
 
+    let pythonIndex = 0;
     let stdout = "";
     let stderr = "";
+    let hasResponded = false;
 
-    python.stdout.on("data", (data: Buffer) => {
-      stdout += data.toString();
-    });
+    const sendResponse = (status: number, error: string) => {
+      if (hasResponded) return;
+      hasResponded = true;
+      res.status(status).json({ error });
+    };
 
-    python.stderr.on("data", (data: Buffer) => {
-      stderr += data.toString();
-    });
+    const handleScriptOutput = () => {
+      if (hasResponded) return;
 
-    python.on("close", (code: number) => {
-      if (code !== 0) {
-        // The python script prints JSON {"error": "..."} to stdout even when it fails.
-        try {
-          const parsedErr = JSON.parse(stdout);
-          if (parsedErr?.error) {
-            res.status(400).json({ error: parsedErr.error });
-            return;
-          }
-        } catch {
-          // fall through to generic error
-        }
+      if (stderr) {
+        req.log.debug({ stderr }, "Python stderr");
+      }
 
-        req.log.error({ stderr, code }, "Python analysis script failed");
-        res.status(500).json({ error: "Analysis failed: " + (stderr || "Unknown error") });
+      if (!stdout.trim()) {
+        req.log.error({ stderr }, "Python output is empty");
+        sendResponse(500, "Analysis failed: empty response from Python script");
         return;
       }
 
@@ -111,21 +107,82 @@ router.post(
         const parsed = JSON.parse(stdout);
 
         if (parsed.error) {
-          res.status(400).json({ error: parsed.error });
+          sendResponse(400, parsed.error);
           return;
         }
 
         const validated = AnalyzeCodeResponse.parse(parsed);
-        res.json(validated);
+        if (!hasResponded) {
+          res.json(validated);
+          hasResponded = true;
+        }
       } catch (err) {
         req.log.error({ err, stdout }, "Failed to parse Python output");
-        res.status(500).json({ error: "Failed to parse analysis results" });
+        sendResponse(500, "Failed to parse analysis results");
       }
-    });
+    };
 
-    python.on("error", (err: Error) => {
-      req.log.error({ err }, "Failed to spawn Python process");
-      res.status(500).json({ error: "Python interpreter not found. Please ensure python3 is installed." });
+    const tryNextPython = (err: Error & { code?: string }) => {
+      if (err && (err as any).code === "ENOENT" && pythonIndex < pythonCandidates.length - 1) {
+        pythonIndex += 1;
+        req.log.warn({ err }, `Python command not found, retrying with ${pythonCandidates[pythonIndex]}`);
+
+        const python = spawn(pythonCandidates[pythonIndex], [scriptPath]);
+        python.stdout.on("data", (data: Buffer) => { stdout += data.toString(); });
+        python.stderr.on("data", (data: Buffer) => { stderr += data.toString(); });
+
+        python.once("error", tryNextPython);
+        python.once("close", (code: number) => {
+          if (code !== 0) {
+            try {
+              const parsedErr = JSON.parse(stdout);
+              if (parsedErr?.error) {
+                sendResponse(400, parsedErr.error);
+                return;
+              }
+            } catch {
+              // fall through
+            }
+            req.log.error({ stderr, code }, "Python analysis script failed");
+            sendResponse(500, "Analysis failed: " + (stderr || "Unknown error"));
+            return;
+          }
+          handleScriptOutput();
+        });
+
+        python.stdin.write(payload);
+        python.stdin.end();
+        return;
+      }
+
+      req.log.error({ err }, "Failed to spawn any Python interpreter");
+      sendResponse(500, "Python interpreter not found. Please install Python and ensure it is on PATH.");
+    };
+
+    const python = spawn(pythonCandidates[pythonIndex], [scriptPath]);
+    python.stdout.on("data", (data: Buffer) => { stdout += data.toString(); });
+    python.stderr.on("data", (data: Buffer) => { stderr += data.toString(); });
+
+    python.once("error", tryNextPython);
+
+    python.once("close", (code: number) => {
+      if (code !== 0) {
+        try {
+          const parsedErr = JSON.parse(stdout);
+          if (parsedErr?.error) {
+            sendResponse(400, parsedErr.error);
+            return;
+          }
+        } catch {
+          // fall through to generic error
+        }
+
+        req.log.error({ stderr, code }, "Python analysis script failed");
+        sendResponse(500, "Analysis failed: " + (stderr || "Unknown error"));
+        return;
+      }
+
+      handleScriptOutput();
     });
 
     // Send the payload to the Python process via stdin

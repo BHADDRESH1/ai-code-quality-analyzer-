@@ -54,7 +54,9 @@ export default function Home() {
         ? "Only Python, C, C++, and Java are supported"
         : lang1 !== lang2
           ? "Both files must be the same language"
-          : null
+          : file1.size === 0 || file2.size === 0
+            ? "One or both files are empty. Please upload non-empty code files."
+            : null
       : null;
 
   const shownError = localError ?? error?.message ?? null;
