@@ -62,12 +62,22 @@ export default function Home() {
   const shownError = localError ?? error?.message ?? null;
 
   const handleAnalyze = () => {
-    if (!file1 || !file2) return;
+    if (!file1 || !file2) {
+      setLocalError("Please upload both files before analyzing.");
+      return;
+    }
+
+    if (file1.size === 0 || file2.size === 0) {
+      setLocalError("One or both files are empty. Please upload non-empty code files.");
+      return;
+    }
+
     if (preValidationError) {
       reset();
       setLocalError(preValidationError);
       return;
     }
+
     reset();
     setLocalError(null);
     analyze({ file1, file2 });
