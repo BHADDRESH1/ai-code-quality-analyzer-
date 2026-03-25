@@ -5,7 +5,7 @@
   "scripts": {
     "install:all": "npm install --prefix lib/api-zod && npm install --prefix lib/db && npm install --prefix lib/api-client-react && npm install --prefix artifacts/api-server && npm install --prefix artifacts/code-analyzer",
     "postinstall": "npm run install:all",
-    "dev": "concurrently -k -n API,WEB -c cyan,magenta \"cross-env PORT=3001 npm --prefix artifacts/api-server run dev\" \"cross-env PORT=5173 BASE_PATH=/ npm --prefix artifacts/code-analyzer run dev\"",
+    "dev": "concurrently \"cross-env PORT=5173 BASE_PATH=/ npm run dev --prefix artifacts/code-analyzer\" \"cross-env PORT=3001 npm start --prefix artifacts/api-server\"",
     "build": "npm --prefix artifacts/api-server run build && npm --prefix artifacts/code-analyzer run build"
   },
   "private": true,
