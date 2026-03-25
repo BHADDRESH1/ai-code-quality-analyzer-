@@ -8,6 +8,7 @@ import ast
 import sys
 import json
 import re
+from difflib import SequenceMatcher
 
 
 def normalize_ast(tree):
@@ -85,6 +86,107 @@ def calculate_similarity(seq1, seq2):
     # Similarity as ratio of LCS to the average of both lengths
     similarity = (2 * lcs_length) / (m + n) * 100
     return round(similarity, 2)
+
+
+def detect_language_from_filename(filename):
+    """Map filename extension to a supported language name."""
+    lower = (filename or "").lower()
+    if lower.endswith(".py"):
+        return "Python"
+    if lower.endswith(".c"):
+        return "C++"
+    if lower.endswith(".cpp"):
+        return "C++"
+    if lower.endswith(".java"):
+        return "Java"
+    return None
+
+
+def strip_c_style_comments(source):
+    """Remove // and /* */ comments for C/C++/Java similarity checks."""
+    # Remove block comments first, then line comments.
+    no_block = re.sub(r"/\*.*?\*/", "", source, flags=re.S)
+    no_line = re.sub(r"//.*?$", "", no_block, flags=re.M)
+    return no_line
+
+
+def normalize_whitespace(source):
+    """Normalize whitespace so formatting differences don't dominate similarity."""
+    # Collapse all whitespace into single spaces.
+    return " ".join(source.split())
+
+
+def calculate_text_similarity(source1, source2):
+    """Simple token-based similarity using difflib SequenceMatcher."""
+    cleaned1 = normalize_whitespace(strip_c_style_comments(source1))
+    cleaned2 = normalize_whitespace(strip_c_style_comments(source2))
+
+    if not cleaned1 and not cleaned2:
+        return 100.0
+    if not cleaned1 or not cleaned2:
+        return 0.0
+
+    tokens1 = cleaned1.split()
+    tokens2 = cleaned2.split()
+
+    ratio = SequenceMatcher(None, tokens1, tokens2).ratio()
+    return round(ratio * 100, 2)
+
+
+def analyze_text_quality(source, filename, language):
+    """
+    Beginner-friendly quality suggestions for C/C++/Java.
+    Keeps logic lightweight: regex heuristics over the raw text.
+    """
+    suggestions = []
+    lines = [l for l in source.splitlines() if l.strip()]
+    line_count = len(lines)
+
+    if line_count == 0:
+        return ["File is empty. Please provide code content."]
+
+    has_comments = any(
+        ("//" in l) or ("/*" in l) for l in lines
+    )
+    has_long_lines = any(len(l) > 120 for l in lines)
+
+    # Look for repeated numeric literals (very rough "magic number" detector).
+    magic_numbers = re.findall(
+        r"(?<![\w.])[-]?\d+(?:\.\d+)?(?![\w.])",
+        source,
+    )
+
+    # Detect "function/method-like" patterns (still heuristic).
+    functionish = re.search(
+        r"(\b(public|private|protected)\b\s+)?(\bstatic\b\s+)?"
+        r"(void|int|long|double|float|char|boolean|String|byte|short)\s+"
+        r"[A-Za-z_]\w*\s*\(",
+        source,
+    )
+
+    if not functionish and line_count > 20:
+        suggestions.append(
+            "Consider breaking the code into functions/methods to improve readability."
+        )
+    if not has_comments and line_count > 15:
+        suggestions.append("Add comments to explain important parts of your code.")
+    if has_long_lines:
+        suggestions.append("Some lines are very long; try formatting or splitting them for clarity.")
+    if len(magic_numbers) > 5:
+        suggestions.append(
+            "Consider using named constants instead of repeated numeric literals (magic numbers)."
+        )
+
+    if not suggestions:
+        suggestions.append("Code quality looks good! No major issues found.")
+
+    # Add a small language hint so suggestions feel contextual.
+    if language in ("C", "C++"):
+        suggestions.append("Aim for consistent indentation/bracing style across the submission.")
+    elif language == "Java":
+        suggestions.append("Use clear class/method structure and consistent formatting in Java style.")
+
+    return suggestions
 
 
 def get_plagiarism_level(similarity):
@@ -204,37 +306,55 @@ def main():
         name1 = data.get("name1", "file1.py")
         name2 = data.get("name2", "file2.py")
 
-        # Parse ASTs
-        try:
-            tree1 = ast.parse(source1)
-        except SyntaxError as e:
-            print(json.dumps({"error": f"Syntax error in {name1}: {e}"}))
+        if not str(source1).strip() or not str(source2).strip():
+            print(json.dumps({"error": "One or both files are empty"}))
             sys.exit(1)
 
-        try:
-            tree2 = ast.parse(source2)
-        except SyntaxError as e:
-            print(json.dumps({"error": f"Syntax error in {name2}: {e}"}))
+        language1 = detect_language_from_filename(name1)
+        language2 = detect_language_from_filename(name2)
+
+        if language1 is None or language2 is None:
+            print(json.dumps({"error": "Only Python, C, C++, and Java are supported"}))
             sys.exit(1)
 
-        # Normalize ASTs (ignore variable names for structural comparison)
-        normalize_ast(tree1)
-        normalize_ast(tree2)
+        if language1 != language2:
+            print(json.dumps({"error": "Both files must be the same language"}))
+            sys.exit(1)
 
-        # Convert to node type sequences
-        seq1 = ast_to_sequence(tree1)
-        seq2 = ast_to_sequence(tree2)
+        # Python: keep existing AST-based comparison and suggestions.
+        if language1 == "Python":
+            try:
+                tree1 = ast.parse(source1)
+            except SyntaxError as e:
+                print(json.dumps({"error": f"Syntax error in {name1}: {e}"}))
+                sys.exit(1)
 
-        # Calculate similarity
-        similarity = calculate_similarity(seq1, seq2)
-        plagiarism_level = get_plagiarism_level(similarity)
+            try:
+                tree2 = ast.parse(source2)
+            except SyntaxError as e:
+                print(json.dumps({"error": f"Syntax error in {name2}: {e}"}))
+                sys.exit(1)
 
-        # Re-parse originals for quality analysis (without normalization)
-        tree1_orig = ast.parse(source1)
-        tree2_orig = ast.parse(source2)
+            # Normalize ASTs (ignore variable names for structural comparison)
+            normalize_ast(tree1)
+            normalize_ast(tree2)
 
-        suggestions1 = analyze_quality(source1, name1)
-        suggestions2 = analyze_quality(source2, name2)
+            # Convert to node type sequences
+            seq1 = ast_to_sequence(tree1)
+            seq2 = ast_to_sequence(tree2)
+
+            similarity = calculate_similarity(seq1, seq2)
+            plagiarism_level = get_plagiarism_level(similarity)
+
+            suggestions1 = analyze_quality(source1, name1)
+            suggestions2 = analyze_quality(source2, name2)
+
+        # C/C++/Java: use lightweight text-based similarity.
+        else:
+            similarity = calculate_text_similarity(source1, source2)
+            plagiarism_level = get_plagiarism_level(similarity)
+            suggestions1 = analyze_text_quality(source1, name1, language1)
+            suggestions2 = analyze_text_quality(source2, name2, language2)
 
         result = {
             "similarity": similarity,

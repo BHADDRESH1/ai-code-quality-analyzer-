@@ -19,17 +19,60 @@ import { type AnalysisResult } from "@workspace/api-client-react";
 export default function Home() {
   const [file1, setFile1] = useState<File | null>(null);
   const [file2, setFile2] = useState<File | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   
   const { mutate: analyze, data: result, isPending, error, reset } = useAnalyzeCode();
 
+  type SupportedLanguage = "Python" | "C++" | "Java";
+  const supportedExtensions: string[] = [".py", ".c", ".cpp", ".java"];
+
+  const detectLanguageFromName = (name: string): SupportedLanguage | null => {
+    const lower = (name || "").toLowerCase();
+    if (lower.endsWith(".py")) return "Python";
+    if (lower.endsWith(".c")) return "C++";
+    if (lower.endsWith(".cpp")) return "C++";
+    if (lower.endsWith(".java")) return "Java";
+    return null;
+  };
+
+  const lang1 = file1 ? detectLanguageFromName(file1.name) : null;
+  const lang2 = file2 ? detectLanguageFromName(file2.name) : null;
+
+  const detectedLanguage: SupportedLanguage | null =
+    file1 && file2 && lang1 && lang2 && lang1 === lang2 ? lang1 : null;
+
+  const analysisMethodLabel =
+    detectedLanguage === "Python"
+      ? "AST (Python)"
+      : detectedLanguage
+        ? "Text Similarity (Others)"
+        : "AST (Python)";
+
+  const preValidationError =
+    file1 && file2
+      ? !lang1 || !lang2
+        ? "Only Python, C, C++, and Java are supported"
+        : lang1 !== lang2
+          ? "Both files must be the same language"
+          : null
+      : null;
+
+  const shownError = localError ?? error?.message ?? null;
+
   const handleAnalyze = () => {
     if (!file1 || !file2) return;
+    if (preValidationError) {
+      setLocalError(preValidationError);
+      return;
+    }
+    setLocalError(null);
     analyze({ file1, file2 });
   };
 
   const handleReset = () => {
     setFile1(null);
     setFile2(null);
+    setLocalError(null);
     reset();
   };
 
@@ -48,6 +91,9 @@ ${smallDivider}
 Files Analyzed:
 1. ${data.file1Name}
 2. ${data.file2Name}
+
+Detected Language: ${detectedLanguage ?? "Unknown"}
+Analysis Method: ${analysisMethodLabel}
 
 Similarity Score: ${data.similarity}%
 Plagiarism Risk Level: ${data.plagiarismLevel}
@@ -136,26 +182,32 @@ End of Report
                   <FileUpload 
                     label="Submission 1" 
                     file={file1} 
-                    onFileSelect={setFile1} 
+                    onFileSelect={(f) => { setLocalError(null); setFile1(f); }} 
+                    supportedExtensions={supportedExtensions}
+                    accept={supportedExtensions.join(",")}
+                    onInvalidFile={(msg) => setLocalError(msg)}
                   />
                   <FileUpload 
                     label="Submission 2" 
                     file={file2} 
-                    onFileSelect={setFile2} 
+                    onFileSelect={(f) => { setLocalError(null); setFile2(f); }} 
+                    supportedExtensions={supportedExtensions}
+                    accept={supportedExtensions.join(",")}
+                    onInvalidFile={(msg) => setLocalError(msg)}
                   />
                 </div>
 
-                {error && (
+                {shownError && (
                   <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-sm flex items-center gap-3">
                     <AlertTriangle className="w-5 h-5 shrink-0" />
-                    <p>{error.message}</p>
+                    <p>{shownError}</p>
                   </div>
                 )}
 
                 <div className="flex justify-center">
                   <button
                     onClick={handleAnalyze}
-                    disabled={!file1 || !file2}
+                    disabled={!file1 || !file2 || !!preValidationError}
                     className="
                       flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg
                       bg-primary text-primary-foreground 
@@ -168,6 +220,12 @@ End of Report
                   >
                     Analyze Submissions
                   </button>
+                </div>
+
+                <div className="mt-6 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Advanced AI-based multi-language support coming soon
+                  </p>
                 </div>
               </motion.div>
             )}
@@ -187,9 +245,13 @@ End of Report
                     <FileSearch className="w-8 h-8 text-primary animate-pulse" />
                   </div>
                 </div>
-                <h3 className="text-xl font-serif font-semibold text-foreground mb-2">Analyzing AST Structures</h3>
+                <h3 className="text-xl font-serif font-semibold text-foreground mb-2">
+                  Analyzing {analysisMethodLabel}
+                </h3>
                 <p className="text-muted-foreground text-sm max-w-sm text-center">
-                  Extracting syntactic trees and normalizing variable names to compute structural similarity...
+                  {detectedLanguage === "Python"
+                    ? "Extracting syntactic trees and normalizing variable names to compute structural similarity..."
+                    : "Removing comments, normalizing whitespace, and using token similarity to compute plagiarism risk..."}
                 </p>
               </motion.div>
             )}
@@ -202,6 +264,20 @@ End of Report
                 transition={{ duration: 0.5, delay: 0.1 }}
                 className="space-y-8 max-w-4xl mx-auto"
               >
+                <div className="glass-card rounded-3xl p-6 md:p-8">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      Detected Language: {detectedLanguage ?? "Unknown"}
+                    </p>
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      Analysis Method: {analysisMethodLabel}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Advanced AI-based multi-language support coming soon
+                  </p>
+                </div>
+
                 {/* Top Stats Row */}
                 <div className="grid md:grid-cols-3 gap-6">
                   {/* Score Card */}
@@ -218,7 +294,10 @@ End of Report
                       indicatorColor={getLevelConfig(result.plagiarismLevel).progressColor}
                     />
                     <p className="mt-3 text-xs text-muted-foreground italic">
-                      Similarity is calculated using AST-based structural comparison.
+                      Similarity is calculated using{" "}
+                      {detectedLanguage === "Python"
+                        ? "AST-based structural comparison."
+                        : "text-based similarity after removing comments and normalizing whitespace."}
                     </p>
                   </div>
 

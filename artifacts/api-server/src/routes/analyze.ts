@@ -13,13 +13,9 @@ const router: IRouter = Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 1 * 1024 * 1024 }, // 1MB limit per file
-  fileFilter: (_req, file, cb) => {
-    if (file.originalname.endsWith(".py")) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only .py files are allowed"));
-    }
-  },
+  // Accept all files here; we'll validate extensions in the handler so we can return
+  // consistent 400 errors for unsupported types/languages.
+  fileFilter: (_req, _file, cb) => cb(null, true),
 });
 
 router.post(
@@ -39,17 +35,35 @@ router.post(
     const file1 = files["file1"][0];
     const file2 = files["file2"][0];
 
-    if (!file1.originalname.endsWith(".py")) {
-      res.status(400).json({ error: "File 1 must be a .py file" });
-      return;
-    }
-    if (!file2.originalname.endsWith(".py")) {
-      res.status(400).json({ error: "File 2 must be a .py file" });
+    const source1 = file1.buffer.toString("utf8");
+    const source2 = file2.buffer.toString("utf8");
+
+    const getLanguageFromName = (name: string) => {
+      const lower = (name || "").toLowerCase();
+      if (lower.endsWith(".py")) return "Python";
+      if (lower.endsWith(".c")) return "C++";
+      if (lower.endsWith(".cpp")) return "C++";
+      if (lower.endsWith(".java")) return "Java";
+      return null;
+    };
+
+    const language1 = getLanguageFromName(file1.originalname);
+    const language2 = getLanguageFromName(file2.originalname);
+
+    if (!language1 || !language2) {
+      res.status(400).json({ error: "Only Python, C, C++, and Java are supported" });
       return;
     }
 
-    const source1 = file1.buffer.toString("utf8");
-    const source2 = file2.buffer.toString("utf8");
+    if (language1 !== language2) {
+      res.status(400).json({ error: "Both files must be the same language" });
+      return;
+    }
+
+    if (!source1.trim() || !source2.trim()) {
+      res.status(400).json({ error: "One or both files are empty" });
+      return;
+    }
 
     const payload = JSON.stringify({
       source1,
@@ -77,6 +91,17 @@ router.post(
 
     python.on("close", (code: number) => {
       if (code !== 0) {
+        // The python script prints JSON {"error": "..."} to stdout even when it fails.
+        try {
+          const parsedErr = JSON.parse(stdout);
+          if (parsedErr?.error) {
+            res.status(400).json({ error: parsedErr.error });
+            return;
+          }
+        } catch {
+          // fall through to generic error
+        }
+
         req.log.error({ stderr, code }, "Python analysis script failed");
         res.status(500).json({ error: "Analysis failed: " + (stderr || "Unknown error") });
         return;

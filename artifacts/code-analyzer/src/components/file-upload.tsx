@@ -7,10 +7,20 @@ interface FileUploadProps {
   file: File | null;
   onFileSelect: (file: File | null) => void;
   accept?: string;
+  supportedExtensions?: string[];
+  onInvalidFile?: (message: string) => void;
   className?: string;
 }
 
-export function FileUpload({ label, file, onFileSelect, accept = ".py", className }: FileUploadProps) {
+export function FileUpload({
+  label,
+  file,
+  onFileSelect,
+  accept = ".py",
+  supportedExtensions = [".py"],
+  onInvalidFile,
+  className,
+}: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -25,8 +35,15 @@ export function FileUpload({ label, file, onFileSelect, accept = ".py", classNam
   };
 
   const validateAndSetFile = (selectedFile: File) => {
-    if (accept === ".py" && !selectedFile.name.endsWith(".py")) {
-      alert("Please upload a Python (.py) file.");
+    const lowerName = selectedFile.name.toLowerCase();
+    const isSupported = supportedExtensions.some((ext) =>
+      lowerName.endsWith(ext.toLowerCase()),
+    );
+
+    if (!isSupported) {
+      const msg = "Only Python, C, C++, and Java are supported";
+      if (onInvalidFile) onInvalidFile(msg);
+      else alert(msg);
       return;
     }
     onFileSelect(selectedFile);
@@ -69,7 +86,7 @@ export function FileUpload({ label, file, onFileSelect, accept = ".py", classNam
             Click to upload or drag and drop
           </p>
           <p className="text-xs text-muted-foreground mt-1 text-center">
-            Python files only ({accept})
+            Supported files ({accept})
           </p>
           <input
             type="file"
