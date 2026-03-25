@@ -1,5 +1,18 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
-  "outputDirectory": "artifacts/code-analyzer/dist/public"
+  "version": 2,
+  "builds": [
+    {
+      "src": "artifacts/code-analyzer/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist/public" }
+    },
+    {
+      "src": "api/**/*.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/artifacts/code-analyzer/dist/public/$1" }
+  ]
 }
