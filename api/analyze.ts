@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import formidable from "formidable";
 import fs from "fs";
 
@@ -60,7 +59,7 @@ const analyzeQuality = (source: string, language: string) => {
   return suggestions;
 };
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method === "GET") {
     return res.status(200).json({ status: "ok" });
   }
@@ -71,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const form = formidable({ keepExtensions: true });
 
-  form.parse(req, async (err, fields, files) => {
+  form.parse(req, async (err: any, fields: any, files: any) => {
     if (err) {
       return res.status(400).json({ error: "Invalid form data" });
     }
